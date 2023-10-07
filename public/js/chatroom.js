@@ -1,10 +1,10 @@
 (function connect() {
-    let socket = io.connect("https://realtime-chat-x7ff.onrender.com/")
-    
-
+    let socket = io.connect("https://realtime-chat-x7ff.onrender.com/");
+    //let socket = io.connect("http://localhost:3000");
     let username = document.querySelector('#username');
     let usernameBtn = document.querySelector('#usernameBtn');
     let curUsername = document.querySelector('.card-header');
+    socket.desKey = "12345678";
 
     usernameBtn.addEventListener('click', e => {
         console.log(username.value);
@@ -25,10 +25,47 @@
     //
     socket.on('receive_message', data => {
         console.log(data)
-        let listItem = document.createElement('li')
-        listItem.textContent = data.username + " : " + data.message;
-        listItem.classList.add('list-group-item');
-        messageList.appendChild(listItem)
+        /*try {
+            // Decrypt the received message using DES
+            const bytes = CryptoJS.DES.decrypt(data.message, socket.desKey);
+            const decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
+    
+            if (decryptedMessage !== null && decryptedMessage !== undefined) {
+                let listItem = document.createElement('li');
+                listItem.textContent = data.username + " : " + decryptedMessage;
+                listItem.classList.add('list-group-item');
+                messageList.appendChild(listItem);
+              
+                
+            } else {
+                console.error("Decryption resulted in null or undefined message.");
+            }
+        } catch (error) {
+            console.error("Error decrypting message:", error);
+        }*/
+        try {
+            // Display the encrypted message
+            let encryptedListItem = document.createElement('li');
+            encryptedListItem.textContent = data.username + " (Encrypted): " + data.message;
+            encryptedListItem.classList.add('list-group-item');
+            document.getElementById('encrypted-message-list').appendChild(encryptedListItem);
+    
+            // Decrypt the received message using DES
+            const bytes = CryptoJS.DES.decrypt(data.message, socket.desKey);
+            const decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
+    
+            if (decryptedMessage !== null && decryptedMessage !== undefined) {
+                // Display the decrypted message
+                let decryptedListItem = document.createElement('li');
+                decryptedListItem.textContent = data.username + " (Decrypted): " + decryptedMessage;
+                decryptedListItem.classList.add('list-group-item');
+                messageList.appendChild(decryptedListItem);
+            } else {
+                console.error("Decryption resulted in null or undefined message.");
+            }
+        } catch (error) {
+            console.error("Error decrypting message:", error);
+        }
     })
     let info = document.querySelector('.info');
     message.addEventListener('keypress',e =>{

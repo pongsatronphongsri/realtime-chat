@@ -1,37 +1,46 @@
 const express = require('express');
 const socketio = require('socket.io');
 const app = express();
-const crypto = require('crypto');
-
-app.set('view engine','ejs');
+const desCrypto = require('simple-des-crypto'); // Updated package
+const CryptoJS = require('crypto-js');
+app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
-app.get('/',(req,res)=>{
-    res.render("index");
+app.get('/', (req, res) => {
+  res.render("index");
 });
 
-const server = app.listen(process.env.POST || 3000,()=>{
-    console.log("server is running..");
+const server = app.listen(process.env.POST || 3000, () => {
+  console.log("Server is running..");
 });
 
-const secretKey = crypto.randomBytes(32).toString('hex'); // Generate a random 256-bit (32-byte) key
+// Initialize socket for the server
+const io = socketio(server);
 
-// initiallize socket for the server
-const io = socketio(server)
-io.on('connection',(socket)=>{
-    console.log('New user connected');
+io.on('connection', (socket) => {
+  console.log('New user connected');
 
-    socket.username = "Anonymous"
-    socket.on("change_username",data=>{
-        socket.username = data.username
-    })
+  socket.username = "Anonymous";
+  socket.desKey = "12345678"; // Replace with your DES key (must be 8 characters)
 
-// handle    the new message event
-socket.on("new_message",data =>{
-    console.log("new message");
-    io.sockets.emit("receive_message",{message:data.message,username:socket.username})
-})
-socket.on('typing',data =>{
-    socket.broadcast.emit('typing',{username: socket.username})
-})
+  socket.on("change_username", (data) => {
+    socket.username = data.username;
+  });
+
+  // Handle the new message event
+  socket.on("new_message", (data) => {
+    console.log("New message");
+
+    // Encrypt the message using DES
+    const encryptedMessage = CryptoJS.DES.encrypt(data.message, socket.desKey).toString();
+
+    io.sockets.emit("receive_message", {
+      message: encryptedMessage,
+      username: socket.username
+    });
+  });
+
+  socket.on('typing', (data) => {
+    socket.broadcast.emit('typing', { username: socket.username });
+  });
 });
