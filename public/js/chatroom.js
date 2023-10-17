@@ -25,24 +25,6 @@
     //
     socket.on('receive_message', data => {
         console.log(data)
-        /*try {
-            // Decrypt the received message using DES
-            const bytes = CryptoJS.DES.decrypt(data.message, socket.desKey);
-            const decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
-    
-            if (decryptedMessage !== null && decryptedMessage !== undefined) {
-                let listItem = document.createElement('li');
-                listItem.textContent = data.username + " : " + decryptedMessage;
-                listItem.classList.add('list-group-item');
-                messageList.appendChild(listItem);
-              
-                
-            } else {
-                console.error("Decryption resulted in null or undefined message.");
-            }
-        } catch (error) {
-            console.error("Error decrypting message:", error);
-        }*/
         try {
             // Display the encrypted message
             let encryptedListItem = document.createElement('li');
@@ -75,8 +57,8 @@
         info.textContent = data.username + "is typing ..."
         setTimeout(()=>{info.textContent=''},5000)
     })
-
-    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+   
+   let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
     chatHistory.forEach(messageData => {
         let listItem = document.createElement('li');
         listItem.textContent = messageData.username + " : " + messageData.message;
@@ -84,14 +66,39 @@
         messageList.appendChild(listItem);
     });
     socket.on('receive_message', data => {
-        let messageData = {
-            username: data.username,
-            message: data.message
-        };
+        try {
+            // Decrypt the received message using DES
+            const bytes = CryptoJS.DES.decrypt(data.message, socket.desKey);
+            const decryptedMessage = bytes.toString(CryptoJS.enc.Utf8);
     
-        chatHistory.push(messageData);
+            if (decryptedMessage !== null && decryptedMessage !== undefined) {
+                // Update chat history for decrypted messages
+                const decryptedMessageData = {
+                    username: data.username,
+                    message: decryptedMessage
+                };
     
-        // บันทึกประวัติแชทใน localStorage
-        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                // Add to chat history and update local storage
+                chatHistory.push(decryptedMessageData);
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    
+                // Create an HTML element to display the decrypted message
+                /*const decryptedListItem = document.createElement('li');
+                decryptedListItem.textContent = data.username + " (Decrypted): " + decryptedMessage;
+                decryptedListItem.classList.add('list-group-item');
+                document.getElementById('message-list').appendChild(decryptedListItem);*/
+    
+                // Display the encrypted message in the encrypted message box
+                /*const encryptedListItem = document.createElement('li');
+                encryptedListItem.textContent = data.username + " (Encrypted): " + data.message;
+                encryptedListItem.classList.add('list-group-item');
+                document.getElementById('encrypted-message-list').appendChild(encryptedListItem);*/
+            } else {
+                console.error("Decryption resulted in null or undefined message.");
+            }
+        } catch (error) {
+            console.error("Error decrypting message:", error);
+        }
     });
+    
 })();
